@@ -1,0 +1,22 @@
+{
+  "required_users": [
+    {"id": 630592145, "name": "Санёк", "username": "alex_kotlovvv"}
+
+  ],
+  "deadlines": [
+    {
+      "key": "morning",
+      "title": "Утренний отчет",
+      "tag": "#УтреннийОтчет",
+      "weekday_time": "11:00",
+      "weekend_time": "14:17"
+    },
+    {
+      "key": "evening",
+      "title": "Вечерний отчет",
+      "tag": "#ВечернийОтчет",
+      "weekday_time": "18:00",
+      "weekend_time": "14:19"
+    }
+  ]
+}
