@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import json
 import os
 from dataclasses import dataclass
 from datetime import time
+from pathlib import Path
 from typing import Iterable
 
 from dotenv import load_dotenv
@@ -22,13 +24,28 @@ def _parse_user_ids(raw: str | None) -> list[int]:
     return ids
 
 
-def _parse_deadline(raw: str | None) -> time:
-    if not raw:
-        return time(hour=18, minute=0)
-    parts = raw.split(":")
-    if len(parts) != 2:
-        raise ValueError("DEADLINE_TIME must be in HH:MM format")
-    return time(hour=int(parts[0]), minute=int(parts[1]))
+@dataclass(frozen=True)
+class UserRef:
+    user_id: int
+    name: str | None = None
+    username: str | None = None
+
+    def display(self) -> str:
+        if self.username:
+            return f"@{self.username}"
+        return self.name or str(self.user_id)
+
+
+@dataclass(frozen=True)
+class Deadline:
+    key: str
+    tag: str
+    title: str
+    weekday_time: time
+    weekend_time: time
+
+    def time_for_weekday(self, is_weekend: bool) -> time:
+        return self.weekend_time if is_weekend else self.weekday_time
 
 
 @dataclass(frozen=True)
@@ -36,9 +53,66 @@ class Config:
     bot_token: str
     chat_id: int
     report_thread_id: int
-    deadline_time: time
     timezone: str
-    required_user_ids: list[int]
+    required_users: list[UserRef]
+    deadlines: list[Deadline]
+
+
+def _load_settings(path: Path) -> dict:
+    if not path.exists():
+        return {}
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _parse_time(raw: str | None, default_value: time) -> time:
+    if not raw:
+        return default_value
+    parts = raw.split(":")
+    if len(parts) != 2:
+        raise ValueError("Time must be in HH:MM format")
+    return time(hour=int(parts[0]), minute=int(parts[1]))
+
+
+def _load_required_users(settings: dict, fallback_ids: list[int]) -> list[UserRef]:
+    users: list[UserRef] = []
+    raw_users = settings.get("required_users", [])
+    for raw_user in raw_users:
+        users.append(
+            UserRef(
+                user_id=int(raw_user["id"]),
+                name=raw_user.get("name"),
+                username=raw_user.get("username"),
+            )
+        )
+    if users:
+        return users
+    return [UserRef(user_id=user_id) for user_id in fallback_ids]
+
+
+def _load_deadlines(settings: dict) -> list[Deadline]:
+    deadlines: list[Deadline] = []
+    raw_deadlines = settings.get("deadlines", [])
+    for raw in raw_deadlines:
+        deadlines.append(
+            Deadline(
+                key=raw["key"],
+                tag=raw["tag"],
+                title=raw.get("title", raw["key"]),
+                weekday_time=_parse_time(raw.get("weekday_time"), time(hour=18, minute=0)),
+                weekend_time=_parse_time(raw.get("weekend_time"), time(hour=18, minute=0)),
+            )
+        )
+    if deadlines:
+        return deadlines
+    return [
+        Deadline(
+            key="daily",
+            tag="#Отчет",
+            title="Ежедневный отчет",
+            weekday_time=time(hour=18, minute=0),
+            weekend_time=time(hour=18, minute=0),
+        )
+    ]
 
 
 def load_config() -> Config:
@@ -54,22 +128,25 @@ def load_config() -> Config:
     if not thread_id_raw:
         raise ValueError("REPORT_THREAD_ID is required")
 
-    deadline_time = _parse_deadline(os.getenv("DEADLINE_TIME"))
     timezone = os.getenv("TIMEZONE", "Europe/Moscow")
     required_user_ids = _parse_user_ids(os.getenv("REQUIRED_USER_IDS"))
+    settings_path = Path(os.getenv("SETTINGS_PATH", "settings.json"))
+    settings = _load_settings(settings_path)
 
     return Config(
         bot_token=bot_token,
         chat_id=int(chat_id_raw),
         report_thread_id=int(thread_id_raw),
-        deadline_time=deadline_time,
         timezone=timezone,
-        required_user_ids=required_user_ids,
+        required_users=_load_required_users(settings, required_user_ids),
+        deadlines=_load_deadlines(settings),
     )
 
 
-def format_user_list(user_ids: Iterable[int]) -> str:
-    ids = list(user_ids)
-    if not ids:
+def format_user_list(users: Iterable[UserRef]) -> str:
+    items = list(users)
+    if not items:
         return "—"
-    return "\n".join(f"• <code>{user_id}</code>" for user_id in ids)
+    return "\n".join(
+        f"• {user.display()} (<code>{user.user_id}</code>)" for user in items
+    )

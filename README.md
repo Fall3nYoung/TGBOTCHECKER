@@ -25,16 +25,47 @@ pip install -r requirements.txt
 BOT_TOKEN=123456:ABCDEF
 CHAT_ID=-1001234567890
 REPORT_THREAD_ID=12345
-DEADLINE_TIME=18:00
 TIMEZONE=Europe/Moscow
+SETTINGS_PATH=settings.json
 REQUIRED_USER_IDS=11111111,22222222,33333333
 ```
 
 - `CHAT_ID` — ID группы.
 - `REPORT_THREAD_ID` — ID темы (topic), где пишутся отчеты.
-- `REQUIRED_USER_IDS` — список участников, которые обязаны сдавать отчет (ID через запятую).
+- `SETTINGS_PATH` — путь к файлу настроек (ниже пример).
+- `REQUIRED_USER_IDS` — запасной список участников, если не заполнять файл настроек.
 
-3. Запуск:
+3. Создайте `settings.json` рядом с `main.py` для удобной правки дедлайнов и списка людей:
+
+```json
+{
+  "required_users": [
+    {"id": 11111111, "name": "Иван Петров", "username": "ivanpetrov"},
+    {"id": 22222222, "name": "Ольга", "username": "olga"}
+  ],
+  "deadlines": [
+    {
+      "key": "morning",
+      "title": "Утренний отчет",
+      "tag": "#УтреннийОтчет",
+      "weekday_time": "11:00",
+      "weekend_time": "12:00"
+    },
+    {
+      "key": "evening",
+      "title": "Вечерний отчет",
+      "tag": "#ВечернийОтчет",
+      "weekday_time": "18:00",
+      "weekend_time": "19:00"
+    }
+  ]
+}
+```
+
+- `tag` — хештег, который должны указывать люди в отчете.
+- `weekday_time` / `weekend_time` — разное время для будней и выходных.
+
+4. Запуск:
 
 ```bash
 python main.py
