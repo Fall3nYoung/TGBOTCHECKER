@@ -23,7 +23,22 @@ async def init_db() -> None:
             )
             """
         )
+        await _ensure_columns(db)
         await db.commit()
+
+
+async def _ensure_columns(db: aiosqlite.Connection) -> None:
+    cursor = await db.execute("PRAGMA table_info(reports)")
+    rows = await cursor.fetchall()
+    existing = {row[1] for row in rows}
+    if "deadline_key" not in existing:
+        await db.execute(
+            "ALTER TABLE reports ADD COLUMN deadline_key TEXT NOT NULL DEFAULT ''"
+        )
+    if "username" not in existing:
+        await db.execute("ALTER TABLE reports ADD COLUMN username TEXT")
+    if "full_name" not in existing:
+        await db.execute("ALTER TABLE reports ADD COLUMN full_name TEXT")
 
 @dataclass(frozen=True)
 class ReportUser:
