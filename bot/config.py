@@ -49,13 +49,18 @@ class Deadline:
 
 
 @dataclass(frozen=True)
-class Config:
-    bot_token: str
+class ChatConfig:
     chat_id: int
     report_thread_id: int
-    timezone: str
     required_users: list[UserRef]
+
+
+@dataclass(frozen=True)
+class Config:
+    bot_token: str
+    timezone: str
     deadlines: list[Deadline]
+    chats: list[ChatConfig]
 
 
 def _load_settings(path: Path) -> dict:
@@ -115,18 +120,42 @@ def _load_deadlines(settings: dict) -> list[Deadline]:
     ]
 
 
+def _load_chats(settings: dict, fallback_ids: list[int]) -> list[ChatConfig]:
+    chats: list[ChatConfig] = []
+    raw_chats = settings.get("chats", [])
+    for raw_chat in raw_chats:
+        chat_required = _load_required_users(
+            {"required_users": raw_chat.get("required_users", [])},
+            fallback_ids,
+        )
+        chats.append(
+            ChatConfig(
+                chat_id=int(raw_chat["chat_id"]),
+                report_thread_id=int(raw_chat["report_thread_id"]),
+                required_users=chat_required,
+            )
+        )
+    if chats:
+        return chats
+    chat_id_raw = os.getenv("CHAT_ID")
+    if not chat_id_raw:
+        raise ValueError("CHAT_ID is required when settings.json has no chats")
+    thread_id_raw = os.getenv("REPORT_THREAD_ID")
+    if not thread_id_raw:
+        raise ValueError("REPORT_THREAD_ID is required when settings.json has no chats")
+    return [
+        ChatConfig(
+            chat_id=int(chat_id_raw),
+            report_thread_id=int(thread_id_raw),
+            required_users=_load_required_users(settings, fallback_ids),
+        )
+    ]
+
+
 def load_config() -> Config:
     bot_token = os.getenv("BOT_TOKEN")
     if not bot_token:
         raise ValueError("BOT_TOKEN is required")
-
-    chat_id_raw = os.getenv("CHAT_ID")
-    if not chat_id_raw:
-        raise ValueError("CHAT_ID is required")
-
-    thread_id_raw = os.getenv("REPORT_THREAD_ID")
-    if not thread_id_raw:
-        raise ValueError("REPORT_THREAD_ID is required")
 
     timezone = os.getenv("TIMEZONE", "Europe/Moscow")
     required_user_ids = _parse_user_ids(os.getenv("REQUIRED_USER_IDS"))
@@ -135,11 +164,9 @@ def load_config() -> Config:
 
     return Config(
         bot_token=bot_token,
-        chat_id=int(chat_id_raw),
-        report_thread_id=int(thread_id_raw),
         timezone=timezone,
-        required_users=_load_required_users(settings, required_user_ids),
         deadlines=_load_deadlines(settings),
+        chats=_load_chats(settings, required_user_ids),
     )
 
 

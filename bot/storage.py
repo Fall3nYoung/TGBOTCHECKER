@@ -17,28 +17,64 @@ async def init_db() -> None:
                 report_date TEXT NOT NULL,
                 user_id INTEGER NOT NULL,
                 deadline_key TEXT NOT NULL,
+                chat_id INTEGER NOT NULL,
                 username TEXT,
                 full_name TEXT,
-                PRIMARY KEY (report_date, user_id, deadline_key)
+                PRIMARY KEY (report_date, user_id, deadline_key, chat_id)
             )
             """
         )
-        await _ensure_columns(db)
+        await _ensure_schema(db)
         await db.commit()
 
 
-async def _ensure_columns(db: aiosqlite.Connection) -> None:
+async def _ensure_schema(db: aiosqlite.Connection) -> None:
     cursor = await db.execute("PRAGMA table_info(reports)")
     rows = await cursor.fetchall()
     existing = {row[1] for row in rows}
-    if "deadline_key" not in existing:
-        await db.execute(
-            "ALTER TABLE reports ADD COLUMN deadline_key TEXT NOT NULL DEFAULT ''"
+    pk_cols = [row[1] for row in rows if row[5]]
+    expected_pk = {"report_date", "user_id", "deadline_key", "chat_id"}
+    if expected_pk.issubset(set(pk_cols)) and {
+        "report_date",
+        "user_id",
+        "deadline_key",
+        "chat_id",
+        "username",
+        "full_name",
+    }.issubset(existing):
+        return
+    await _migrate_reports(db, existing)
+
+
+async def _migrate_reports(db: aiosqlite.Connection, existing: set[str]) -> None:
+    await db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS reports_new (
+            report_date TEXT NOT NULL,
+            user_id INTEGER NOT NULL,
+            deadline_key TEXT NOT NULL,
+            chat_id INTEGER NOT NULL,
+            username TEXT,
+            full_name TEXT,
+            PRIMARY KEY (report_date, user_id, deadline_key, chat_id)
         )
-    if "username" not in existing:
-        await db.execute("ALTER TABLE reports ADD COLUMN username TEXT")
-    if "full_name" not in existing:
-        await db.execute("ALTER TABLE reports ADD COLUMN full_name TEXT")
+        """
+    )
+    deadline_expr = "deadline_key" if "deadline_key" in existing else "''"
+    chat_expr = "chat_id" if "chat_id" in existing else "0"
+    username_expr = "username" if "username" in existing else "NULL"
+    full_name_expr = "full_name" if "full_name" in existing else "NULL"
+    await db.execute(
+        f"""
+        INSERT OR REPLACE INTO reports_new (
+            report_date, user_id, deadline_key, chat_id, username, full_name
+        )
+        SELECT report_date, user_id, {deadline_expr}, {chat_expr}, {username_expr}, {full_name_expr}
+        FROM reports
+        """
+    )
+    await db.execute("DROP TABLE reports")
+    await db.execute("ALTER TABLE reports_new RENAME TO reports")
 
 @dataclass(frozen=True)
 class ReportUser:
@@ -51,6 +87,7 @@ async def add_report(
     report_date: date,
     user_id: int,
     deadline_key: str,
+    chat_id: int,
     username: str | None,
     full_name: str | None,
 ) -> None:
@@ -58,23 +95,32 @@ async def add_report(
         await db.execute(
             """
             INSERT OR REPLACE INTO reports (
-                report_date, user_id, deadline_key, username, full_name
-            ) VALUES (?, ?, ?, ?, ?)
+                report_date, user_id, deadline_key, chat_id, username, full_name
+            ) VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (report_date.isoformat(), user_id, deadline_key, username, full_name),
+            (
+                report_date.isoformat(),
+                user_id,
+                deadline_key,
+                chat_id,
+                username,
+                full_name,
+            ),
         )
         await db.commit()
 
 
-async def get_reporters(report_date: date, deadline_key: str) -> dict[int, ReportUser]:
+async def get_reporters(
+    report_date: date, deadline_key: str, chat_id: int
+) -> dict[int, ReportUser]:
     async with aiosqlite.connect(DB_PATH) as db:
         cursor = await db.execute(
             """
             SELECT user_id, username, full_name
             FROM reports
-            WHERE report_date = ? AND deadline_key = ?
+            WHERE report_date = ? AND deadline_key = ? AND chat_id = ?
             """,
-            (report_date.isoformat(), deadline_key),
+            (report_date.isoformat(), deadline_key, chat_id),
         )
         rows = await cursor.fetchall()
     return {

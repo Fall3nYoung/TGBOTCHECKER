@@ -4,7 +4,7 @@ from aiogram import Router, types
 from aiogram.filters import Command
 from aiogram.utils.markdown import hbold
 
-from bot.config import Config, UserRef, format_user_list
+from bot.config import ChatConfig, Config, UserRef, format_user_list
 from bot.storage import add_report, get_reporters
 from bot.time_utils import today_in_timezone
 
@@ -22,11 +22,17 @@ async def start(message: types.Message, config: Config) -> None:
 @router.message(Command("reportstatus"))
 async def report_status(message: types.Message, config: Config) -> None:
     today = today_in_timezone(config.timezone)
-    required_by_id = {user.user_id: user for user in config.required_users}
+    if message.chat is None:
+        return
+    chat_config = _find_chat_config(config, message.chat.id)
+    if chat_config is None:
+        await message.answer("Этот чат не настроен для отчетов.")
+        return
+    required_by_id = {user.user_id: user for user in chat_config.required_users}
     parts: list[str] = [hbold("Сегодняшний статус")]
 
     for deadline in config.deadlines:
-        reporters = await get_reporters(today, deadline.key)
+        reporters = await get_reporters(today, deadline.key, chat_config.chat_id)
         reporters_list = sorted(
             reporters.values(), key=lambda user: user.user_id
         )
@@ -59,7 +65,12 @@ async def report_status(message: types.Message, config: Config) -> None:
 
 @router.message()
 async def capture_reports(message: types.Message, config: Config) -> None:
-    if message.message_thread_id != config.report_thread_id:
+    if message.chat is None:
+        return
+    chat_config = _find_chat_config(config, message.chat.id)
+    if chat_config is None:
+        return
+    if message.message_thread_id != chat_config.report_thread_id:
         return
     if not message.from_user or message.from_user.is_bot:
         return
@@ -76,6 +87,14 @@ async def capture_reports(message: types.Message, config: Config) -> None:
             today_in_timezone(config.timezone),
             message.from_user.id,
             deadline.key,
+            chat_config.chat_id,
             username,
             full_name,
         )
+
+
+def _find_chat_config(config: Config, chat_id: int) -> ChatConfig | None:
+    for chat in config.chats:
+        if chat.chat_id == chat_id:
+            return chat
+    return None

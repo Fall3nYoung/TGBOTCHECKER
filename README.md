@@ -23,25 +23,38 @@ pip install -r requirements.txt
 
 ```env
 BOT_TOKEN=123456:ABCDEF
-CHAT_ID=-1001234567890
-REPORT_THREAD_ID=12345
 TIMEZONE=Europe/Moscow
 SETTINGS_PATH=settings.json
 REQUIRED_USER_IDS=11111111,22222222,33333333
+# Если не хотите использовать settings.json -> chats, можно задать один чат:
+# CHAT_ID=-1001234567890
+# REPORT_THREAD_ID=12345
 ```
 
-- `CHAT_ID` — ID группы.
-- `REPORT_THREAD_ID` — ID темы (topic), где пишутся отчеты.
 - `SETTINGS_PATH` — путь к файлу настроек (ниже пример).
 - `REQUIRED_USER_IDS` — запасной список участников, если не заполнять файл настроек.
+- `CHAT_ID` / `REPORT_THREAD_ID` — опциональная пара для одного чата, если не используется `chats` в settings.json.
 
 3. Создайте `settings.json` рядом с `main.py` для удобной правки дедлайнов и списка людей:
 
 ```json
 {
-  "required_users": [
-    {"id": 11111111, "name": "Иван Петров", "username": "ivanpetrov"},
-    {"id": 22222222, "name": "Ольга", "username": "olga"}
+  "chats": [
+    {
+      "chat_id": -1001234567890,
+      "report_thread_id": 12345,
+      "required_users": [
+        {"id": 11111111, "name": "Иван Петров", "username": "ivanpetrov"},
+        {"id": 22222222, "name": "Ольга", "username": "olga"}
+      ]
+    },
+    {
+      "chat_id": -1009999999999,
+      "report_thread_id": 67890,
+      "required_users": [
+        {"id": 33333333, "name": "Анна", "username": "anna"}
+      ]
+    }
   ],
   "deadlines": [
     {
@@ -64,6 +77,7 @@ REQUIRED_USER_IDS=11111111,22222222,33333333
 
 - `tag` — хештег, который должны указывать люди в отчете.
 - `weekday_time` / `weekend_time` — разное время для будней и выходных.
+- `chats` — список чатов с их `chat_id`, `report_thread_id` и списком обязанных пользователей.
 
 4. Запуск:
 
@@ -79,4 +93,4 @@ python main.py
 
 Telegram не дает боту полный список участников группы, поэтому список обязанных пользователей задается через `REQUIRED_USER_IDS`.
 
-Если вы обновляете уже существующую базу `data.db`, бот сам добавит недостающие колонки. В редких случаях проще удалить старый `data.db`, чтобы он создался заново.
+Если вы обновляете уже существующую базу `data.db`, бот сам мигрирует схему (добавит недостающие колонки и ключи). В редких случаях проще удалить старый `data.db`, чтобы он создался заново.
