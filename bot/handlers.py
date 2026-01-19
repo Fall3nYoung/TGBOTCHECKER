@@ -43,7 +43,7 @@ async def report_status(message: types.Message, config: Config) -> None:
             "\n".join(
                 [
                     f"\n{hbold(deadline.title)} ({deadline.tag})",
-                    f"{hbold('Отчитались')}:",
+                    f"{hbold('Отчитались✅')}:",
                     format_user_list(
                         [
                             UserRef(
@@ -54,7 +54,7 @@ async def report_status(message: types.Message, config: Config) -> None:
                             for report in reporters_list
                         ]
                     ),
-                    f"{hbold('Не отчитались')}:",
+                    f"{hbold('Не отчитались❌')}:",
                     format_user_list(missing_list),
                 ]
             )
