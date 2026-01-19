@@ -170,10 +170,11 @@ def load_config() -> Config:
     )
 
 
-def format_user_list(users: Iterable[UserRef]) -> str:
+def format_user_list(users: Iterable[UserRef], marker: str | None = None) -> str:
     items = list(users)
     if not items:
         return "—"
+    prefix = f"{marker} " if marker else ""
     return "\n".join(
-        f"• {user.display()} (<code>{user.user_id}</code>)" for user in items
+        f"• {prefix}{user.display()} (<code>{user.user_id}</code>)" for user in items
     )

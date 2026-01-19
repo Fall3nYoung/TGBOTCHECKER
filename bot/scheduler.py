@@ -23,8 +23,8 @@ async def send_deadline_summary(
     text = (
         f"{hbold('Дедлайн пройден')}: {deadline.title}\n\n"
         f"{hbold('Отчитались')}:\n"
-        f"{format_user_list([UserRef(user_id=r.user_id, username=r.username, name=r.full_name) for r in reporters.values()])}\n\n"
-        f"{hbold('Не отчитались')}:\n{format_user_list(missing_list)}"
+        f"{format_user_list([UserRef(user_id=r.user_id, username=r.username, name=r.full_name) for r in reporters.values()], marker='✅')}\n\n"
+        f"{hbold('Не отчитались')}:\n{format_user_list(missing_list, marker='❌')}"
     )
     await bot.send_message(
         chat_id=chat.chat_id,
