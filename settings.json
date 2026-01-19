@@ -1,0 +1,53 @@
+{
+  "chats": [
+    {
+      "chat_id": -1002769938065,
+      "report_thread_id": 43,
+      "required_users": [
+        {"id": 966306745, "name": "Богдан", "username": "@tsbsee"},
+        {"id": 1698150528, "name": "Елена", "username": "@solnishkina"},
+        {"id": 496075610, "name": "Анастасия", "username": "@marchenko_A999"},
+        {"id": 839370195, "name": "Павел", "username": "@PavelFlc"}
+      ]
+    },
+    {
+      "chat_id": -1002769938065,
+      "report_thread_id": 8310,
+      "required_users": [
+        {"id": 496075610, "name": "Анастасия", "username": "@marchenko_A999"}
+      ]
+    },
+    {
+      "chat_id": -1002156824099,
+      "report_thread_id": 27557,
+      "required_users": [
+        {"id": 630592145, "name": "Александр", "username": "@alex_kotlovvv"},
+        {"id": 829349098, "name": "Арина", "username": "@aefremova_07"}
+      ]
+    },
+    {
+      "chat_id": -1003698639221,
+      "report_thread_id": 2,
+      "required_users": [
+        {"id": 630592145, "name": "Александр", "username": "@alex_kotlovvv"}
+
+      ]
+    }
+  ],
+  "deadlines": [
+    {
+      "key": "morning",
+      "title": "Утренний отчет",
+      "tag": "#УтреннийОтчет",
+      "weekday_time": "13:04",
+      "weekend_time": "11:00"
+    },
+    {
+      "key": "evening",
+      "title": "Вечерний отчет",
+      "tag": "#ВечернийОтчет",
+      "weekday_time": "18:00",
+      "weekend_time": "21:00"
+    }
+  ]
+}
