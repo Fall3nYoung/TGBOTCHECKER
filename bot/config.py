@@ -32,7 +32,8 @@ class UserRef:
 
     def display(self) -> str:
         if self.username:
-            return f"@{self.username}"
+            normalized = self.username.lstrip("@")
+            return f"@{normalized}"
         return self.name or str(self.user_id)
 
 

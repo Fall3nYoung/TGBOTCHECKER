@@ -24,15 +24,25 @@ async def report_status(message: types.Message, config: Config) -> None:
     today = today_in_timezone(config.timezone)
     if message.chat is None:
         return
-    chat_config = _find_chat_config(config, message.chat.id)
+    chat_config = _find_chat_config(
+        config, message.chat.id, message.message_thread_id
+    )
     if chat_config is None:
-        await message.answer("Этот чат не настроен для отчетов.")
+        await message.answer(
+            "Этот топик не настроен для отчетов. "
+            "Запустите команду в нужной теме."
+        )
         return
     required_by_id = {user.user_id: user for user in chat_config.required_users}
     parts: list[str] = [hbold("Сегодняшний статус")]
 
     for deadline in config.deadlines:
-        reporters = await get_reporters(today, deadline.key, chat_config.chat_id)
+        reporters = await get_reporters(
+            today,
+            deadline.key,
+            chat_config.chat_id,
+            chat_config.report_thread_id,
+        )
         reporters_list = sorted(
             reporters.values(), key=lambda user: user.user_id
         )
@@ -68,7 +78,9 @@ async def report_status(message: types.Message, config: Config) -> None:
 async def capture_reports(message: types.Message, config: Config) -> None:
     if message.chat is None:
         return
-    chat_config = _find_chat_config(config, message.chat.id)
+    chat_config = _find_chat_config(
+        config, message.chat.id, message.message_thread_id
+    )
     if chat_config is None:
         return
     if message.message_thread_id != chat_config.report_thread_id:
@@ -89,13 +101,18 @@ async def capture_reports(message: types.Message, config: Config) -> None:
             message.from_user.id,
             deadline.key,
             chat_config.chat_id,
+            chat_config.report_thread_id,
             username,
             full_name,
         )
 
 
-def _find_chat_config(config: Config, chat_id: int) -> ChatConfig | None:
+def _find_chat_config(
+    config: Config, chat_id: int, thread_id: int | None
+) -> ChatConfig | None:
+    if thread_id is None:
+        return None
     for chat in config.chats:
-        if chat.chat_id == chat_id:
+        if chat.chat_id == chat_id and chat.report_thread_id == thread_id:
             return chat
     return None

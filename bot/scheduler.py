@@ -14,7 +14,12 @@ async def send_deadline_summary(
 ) -> None:
     today = today_in_timezone(config.timezone)
     required_by_id = {user.user_id: user for user in chat.required_users}
-    reporters = await get_reporters(today, deadline_key, chat.chat_id)
+    reporters = await get_reporters(
+        today,
+        deadline_key,
+        chat.chat_id,
+        chat.report_thread_id,
+    )
     missing_ids = set(required_by_id) - set(reporters)
     missing_list = [required_by_id[user_id] for user_id in sorted(missing_ids)]
 
