@@ -85,7 +85,7 @@ REQUIRED_USER_IDS=11111111,22222222,33333333
 4. Запуск:
 
 ```bash
-python main.py
+python report_bot.py
 ```
 
 ## Как узнать ID темы
