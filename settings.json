@@ -6,7 +6,6 @@
       "required_users": [
         {"id": 966306745, "name": "Богдан", "username": "@tsbsee"},
         {"id": 1698150528, "name": "Елена", "username": "@solnishkina"},
-        {"id": 496075610, "name": "Анастасия", "username": "@marchenko_A999"},
         {"id": 839370195, "name": "Павел", "username": "@PavelFlc"}
       ]
     },
@@ -39,7 +38,7 @@
       "key": "morning",
       "title": "Утренний отчет",
       "tag": "#УтреннийОтчет",
-      "weekday_time": "13:50",
+      "weekday_time": "10:00",
       "weekend_time": "11:00"
     },
     {
