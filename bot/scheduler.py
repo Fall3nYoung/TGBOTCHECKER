@@ -49,7 +49,7 @@ def setup_scheduler(bot: Bot, config: Config) -> AsyncIOScheduler:
                 hour=deadline.weekday_time.hour,
                 minute=deadline.weekday_time.minute,
                 args=[bot, config, deadline.key, chat],
-                id=f"{deadline.key}_weekday_{chat.chat_id}",
+                id=f"{deadline.key}_weekday_{chat.chat_id}_{chat.report_thread_id}",
                 replace_existing=True,
             )
             scheduler.add_job(
@@ -59,7 +59,7 @@ def setup_scheduler(bot: Bot, config: Config) -> AsyncIOScheduler:
                 hour=deadline.weekend_time.hour,
                 minute=deadline.weekend_time.minute,
                 args=[bot, config, deadline.key, chat],
-                id=f"{deadline.key}_weekend_{chat.chat_id}",
+                id=f"{deadline.key}_weekend_{chat.chat_id}_{chat.report_thread_id}",
                 replace_existing=True,
             )
     return scheduler
